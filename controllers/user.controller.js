@@ -59,7 +59,7 @@ if(!isMatch){
     });
     return;
 }
-const token = jwt.sign({id:isUser._id}, process.env.JWT_SECRET,{expiresIn:"5h"})
+const token = jwt.sign({id:isUser._id, roles:isUser.roles}, process.env.JWT_SECRET,{expiresIn:"5h"})
 res.status(200).send({
     message:"login successful",
     data:{
@@ -148,7 +148,17 @@ const getUser=async (req, res)=>{
 }
 
 const getAllUsers=async (req, res)=>{
+    const user=req.user.roles
     try {
+
+if ( user !== "admin"){
+    return res.status(403).send({
+        message:"forbidden"
+    })
+}
+
+
+
         const getFullUsers= await UserModel.find().select("-password")
         res.status(200).send({
             message:"users retrieved successfully",
@@ -165,13 +175,57 @@ const getAllUsers=async (req, res)=>{
             error:error.message
         })
     }
+};
+
+const verifyUser = (req, res, next) => {
+    const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+    if (!authHeader) {
+        return res.status(401).send({ message: 'authorization header missing' });
+    }
+
+    const parts = authHeader.split(' ').filter(Boolean);
+    const token = parts.length === 2 ? parts[1] : parts[0];
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'unauthorized' });
+        }
+        req.user = decoded;
+        next();
+    });
+};
+
+
+const getMe=async (req, res)=>{
+    console.log(req.user.id);
+// const {id}= req.user
+// console.log(id);
+
+    
+    try{
+        const user =await UserModel.findById(req.user.id).select("-password")
+        res.status(200).send({
+            message:"user retrieved successfully",
+            data:user
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(400).send({
+            message:"user retrieval failed",
+            error:error.message
+        })
+    }
 }
 
-module.exports={
+
+
+module.exports= {
     createUser,
     login,
     editUser,
     deleteUser,
     getUser,
-    getAllUsers
-}
+    getAllUsers,
+    verifyUser,
+    getMe
+};
