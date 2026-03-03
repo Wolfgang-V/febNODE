@@ -3,13 +3,18 @@ const app = express()
 const ejs = require('ejs')
 const mongoose = require("mongoose")
 const cors = require("cors")
+const methodOverride = require('method-override')
 app.set('view engine', 'ejs')
 const dotenv = require('dotenv')
 dotenv.config()
 app.use(cors()) // Enable CORS before routes
 app.use(express.urlencoded({extended:true}))
-app.use(express.json())
+app.use(express.json({limit: '50mb'})) // Increase the limit for JSON payloads
+app.use(methodOverride('_method'))
 const UserRouter = require ('./routers/userRoutes')  
+const ProductRouter = require('./routers/product.routes')
+
+app.use('/api/v1', ProductRouter)
 app.use('/api/v1', UserRouter)
 
 
@@ -17,33 +22,9 @@ mongoose.connect(process.env.DATABASE_URI)
   .then(()=>{
     console.log('database connected successfully')
   })
-  .catch((error)=>{  // FIXED: Changed 'err' to 'error' to match the parameter
+  .catch((error)=>{  
     console.log('failed to connect to db', error)
   })
-
-// var x = 5
-// let sum = x+10
-// console.log(sum)
-
-// let students ={
-//     name: wG
-//     course: "web dev"
-//     age: 21
-//     complexion: caramel
-// }
-
-// console.log(students)
-
-// const path = require('path')
-// require('dotenv').config({ path: path.resolve(__dirname, '.env') })
-
-
-
-// console.log('DB URI →', process.env.DATABASE_URI)
-
-
-// console.log(process.env.DATABASE_URI)
-
 
 
 const products = [
@@ -109,79 +90,23 @@ const products = [
   }
 ];
 
-// const users = [
-//   {
-//     userName: "john_doe",
-//     userEmail: "john@example.com",
-//     userAge: 28,
-//     userRole: "Admin"
-//   },
-//   {
-//     userName: "jane_smith",
-//     userEmail: "jane@example.com",
-//     userAge: 25,
-//     userRole: "Editor"
-//   },
-//   {
-//     userName: "michael_brown",
-//     userEmail: "michael@example.com",
-//     userAge: 32,
-//     userRole: "User"
-//   },
-//   {
-//     userName: "emily_white",
-//     userEmail: "emily@example.com",
-//     userAge: 27,
-//     userRole: "User"
-//   },
-//   {
-//     userName: "david_johnson",
-//     userEmail: "david@example.com",
-//     userAge: 35,
-//     userRole: "Manager"
-//   },
-//   {
-//     userName: "sarah_wilson",
-//     userEmail: "sarah@example.com",
-//     userAge: 24,
-//     userRole: "User"
-//   },
-//   {
-//     userName: "daniel_martin",
-//     userEmail: "daniel@example.com",
-//     userAge: 30,
-//     userRole: "Editor"
-//   },
-//   {
-//     userName: "olivia_taylor",
-//     userEmail: "olivia@example.com",
-//     userAge: 26,
-//     userRole: "User"
-//   },
-//   {
-//     userName: "james_anderson",
-//     userEmail: "james@example.com",
-//     userAge: 40,
-//     userRole: "Admin"
-//   },
-//   {
-//     userName: "lucas_moore",
-//     userEmail: "lucas@example.com",
-//     userAge: 22,
-//     userRole: "User"
-//   }
-// ];
-
 
 app.get('/', (req, res)=>{
- //  res.send(users)
    console.log(__dirname);
    res.sendFile(__dirname +"/index.html")
 });
 
 
-app.get('/index', (req, res)=>{
-  res.render('index', {products})
+const ProductModel = require("./models/product.model")
+
+app.get('/index', async (req, res)=>{
+  try {
+    const products = await ProductModel.find().populate("createdBy","firstName lastName email")
+    res.render('index', { products })
+  } catch (error) {
+    console.log('Error fetching products:', error)
+    res.render('index', { products: [] })
+  }
 })
 
 app.get('/addproduct', (req, res)=>{
@@ -236,10 +161,10 @@ app.post('/updateprod/:id', (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 5008;
-app.listen(PORT, (err) => {  // FIXED: Using PORT variable instead of process.env.PORT directly
+app.listen(PORT, (err) => {  
   if (err) {
-    console.log('Error starting server:', err);  // FIXED: Added err to see the actual error
+    console.log('Error starting server:', err);  
   } else {
-    console.log(`Server is running on port ${PORT}`);  // FIXED: More descriptive message
+    console.log(`Server is running on port ${PORT}`);  
   }
 })

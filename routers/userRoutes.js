@@ -12,6 +12,7 @@ router.patch('/edituser/:id', editUser)
 router.delete("/deleteuser/:id", deleteUser)
 
 router.post("/login", login)
+router.post ("/requestotp", requestOTP)
 router.get("/me", verifyUser, getMe)
 
 

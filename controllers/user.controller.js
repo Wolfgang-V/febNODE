@@ -1,6 +1,20 @@
-const UserModel = require("../models/user.model")
-const bcrypt= require("bcrypt")
-const jwt = require("jsonwebtoken")
+const UserModel = require("../models/user.model");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+const mailSender = require("../middleware/mailer");
+const otpgen = require("otp-generator");
+const OTPModel = require("../models/otp.model");
+
+
+
+let transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.NODE_MAIL, // Replace with your email
+    pass: process.env.NODE_PASSWORD
+  }
+});
 
 const createUser = async (req, res)=>{
     const {lastName, email, password, firstName} = req.body;
@@ -10,7 +24,7 @@ const saltround = await bcrypt.genSalt(10)
 const hashedPassword = await bcrypt.hash(password, saltround)
 
     const user = await UserModel.create({firstName, lastName,email, password:hashedPassword,});
-
+const renderMail = await mailsender("welcomeMail.ejs", {firstName, lastName, companyName:"WGVENTURES"})
     const token = jwt.sign({id:user._id}, process.env.JWT_SECRET,{expiresIn:"5h"})
 res.status(201).send({
     message:"user created successfully",
@@ -23,7 +37,22 @@ res.status(201).send({
 token
 }
 );
-    
+  let mailOptions = {
+  from: process.env.NODE_MAIL, // Replace with your email
+  to: email,
+  subject: `welcome, ${firstName}!` ,
+  html:renderMail
+}; 
+transporter.sendMail(mailOptions, function(error, info){
+  if (error) {
+    console.log(error);
+  } else {
+    console.log('Email sent: ' + info.response);
+  }
+});
+
+
+
 } 
 catch (error) {
     console.log(error);
@@ -217,6 +246,34 @@ const getMe=async (req, res)=>{
     }
 }
 
+const requestOTP= async(req, res)=>{
+  const {email, otp}= req.body
+  try {
+
+    const sendOTP= otpgen.generate(4, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets:false, digits:SVGComponentTransferFunctionElement })
+    //save their otp and mail in the db
+    //send them a mail with their otp
+    const user = OTPModel.create({email, otp:sendOTP})
+
+    const otpMailContent = await mailSender('otpMail.ejs', {otp:sendOTP})
+
+    res.status(200).send({
+      message:"Otp sent successfully",
+    })
+  } catch (error) {
+    console.log(error);
+    res.status(400).send({
+      message:"Otp request failed",
+    })
+    
+  }
+}
+
+const forgotPassword = async (req, res) => {
+
+
+
+}
 
 
 module.exports= {
@@ -227,5 +284,6 @@ module.exports= {
     getUser,
     getAllUsers,
     verifyUser,
-    getMe
+    getMe,
+    requestOTP,
 };
