@@ -12,16 +12,16 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Hello,<% ${firstName} ${lastName}%></h1>
+            <h1>Hello, <%= firstName %> <%= lastName %></h1>
         </div>
         
         <div class="content">
-            <p>Thank you for signing up with <strong><%= WGVENTURES %></strong>.</p>
+            <p>Thank you for signing up with <strong><%= companyName %></strong>.</p>
             
         </div>
         
         <div class="footer">
-            <p>This email was sent by <%= companyName %> &copy; <%${new Date ().getFullYear()}%></p>
+            <p>This email was sent by <%= companyName %> &copy; <%= new Date().getFullYear() %></p>
         </div>
     </div>
 </body>

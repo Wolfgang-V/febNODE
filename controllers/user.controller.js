@@ -24,7 +24,7 @@ const saltround = await bcrypt.genSalt(10)
 const hashedPassword = await bcrypt.hash(password, saltround)
 
     const user = await UserModel.create({firstName, lastName,email, password:hashedPassword,});
-const renderMail = await mailsender("welcomeMail.ejs", {firstName, lastName, companyName:"WGVENTURES"})
+const renderMail = await mailSender("welcomeMail.ejs", {firstName, lastName, companyName:"WGVENTURES"})
     const token = jwt.sign({id:user._id}, process.env.JWT_SECRET,{expiresIn:"5h"})
 res.status(201).send({
     message:"user created successfully",
